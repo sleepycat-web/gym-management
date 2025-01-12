@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, User, UserPen, Menu, X, IndianRupee, CloudDownload  } from "lucide-react";
+import { CalendarIcon, User, UserPen, Menu, X, IndianRupee, CloudDownload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -50,6 +50,24 @@ type User = {
   lastPaidMonth: string;
 };
 
+const menuItems = [
+  {
+    id: "revenue",
+    icon: <IndianRupee className="h-4 w-4 mr-2" />,
+    label: "Revenue"
+  },
+  {
+    id: "register",
+    icon: <User className="h-4 w-4 mr-2" />,
+    label: "Register User"
+  },
+  {
+    id: "manage",
+    icon: <UserPen className="h-4 w-4 mr-2" />,
+    label: "Manage Users"
+  }
+];
+
 export default function HomePage() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -59,44 +77,42 @@ export default function HomePage() {
   const [amount, setAmount] = useState("");
   const [activeTab, setActiveTab] = useState("revenue");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-
+  const [deferredPrompt, setDeferredPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null);
   const [users, setUsers] = useState<User[]>([]);
+
   const currentDate = new Date();
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    window.addEventListener('beforeinstallprompt', (e) => {
+    window.addEventListener("beforeinstallprompt", (e) => {
       e.preventDefault();
-       setDeferredPrompt(e as BeforeInstallPromptEvent);
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
     });
   }, []);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
+      if (
+        mobileMenuRef.current &&
+        !mobileMenuRef.current.contains(event.target as Node)
+      ) {
         setIsMobileMenuOpen(false);
       }
     }
 
     if (isMobileMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isMobileMenuOpen]);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
-
-    // Show the install prompt
     await deferredPrompt.prompt();
-    
-    // Wait for the user to respond to the prompt
-     
-    // Clear the deferredPrompt variable
     setDeferredPrompt(null);
   };
 
@@ -191,7 +207,10 @@ export default function HomePage() {
   return (
     <div className="flex min-h-screen bg-white dark:bg-neutral-950 text-neutral-950 dark:text-neutral-50">
       {/* Mobile Header */}
-      <div ref={mobileMenuRef} className="md:hidden fixed top-0 left-0 right-0 bg-neutral-100 dark:bg-neutral-900 p-4 z-50">
+      <div
+        ref={mobileMenuRef}
+        className="md:hidden fixed top-0 left-0 right-0 bg-neutral-100 dark:bg-neutral-900 p-4 z-50"
+      >
         <div className="flex justify-between items-center">
           <h1 className="text-xl font-semibold text-neutral-900 dark:text-white">
             {activeTab === "register"
@@ -201,17 +220,17 @@ export default function HomePage() {
               : "Manage Users"}
           </h1>
           <div className="flex items-center gap-x-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-neutral-900 dark:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800"
-              onClick={handleInstallClick}
-              style={{ display: deferredPrompt ? 'block' : 'none' }}
-            >
-              <CloudDownload />
-            </Button>
+            {deferredPrompt && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-neutral-900 dark:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800"
+                onClick={handleInstallClick}
+              >
+                <CloudDownload />
+              </Button>
+            )}
             <ThemeToggle />
-
             <Button
               variant="ghost"
               size="icon"
@@ -228,58 +247,34 @@ export default function HomePage() {
         </div>
 
         {/* Mobile Menu */}
-        {isMobileMenuOpen && (
+        {/* Mobile Menu */}
+        <div
+          className={`transition-all duration-200 ease-in-out ${
+            isMobileMenuOpen ? "block" : "hidden"
+          }`}
+        >
           <nav className="mt-4 space-y-2">
-            <Button
-              variant="ghost"
-              className={`w-full justify-start text-neutral-900 dark:text-white
-                ${
-                  activeTab === "revenue"
-                    ? "bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700"
-                    : "hover:bg-neutral-200 dark:hover:bg-neutral-800"
-                }`}
-              onClick={() => {
-                setActiveTab("revenue");
-                setIsMobileMenuOpen(false);
-              }}
-            >
-              <IndianRupee className="h-4 w-4 mr-2" />
-              Revenue
-            </Button>
-            <Button
-              variant="ghost"
-              className={`w-full justify-start text-neutral-900 dark:text-white
+            {menuItems.map((item) => (
+              <Button
+                key={item.id}
+                variant="ghost"
+                className={`w-full justify-start text-neutral-900 dark:text-white transition-colors duration-200
           ${
-            activeTab === "register"
+            activeTab === item.id
               ? "bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700"
               : "hover:bg-neutral-200 dark:hover:bg-neutral-800"
           }`}
-              onClick={() => {
-                setActiveTab("register");
-                setIsMobileMenuOpen(false);
-              }}
-            >
-              <User className="h-4 w-4 mr-2" />
-              Register User
-            </Button>
-            <Button
-              variant="ghost"
-              className={`w-full justify-start text-neutral-900 dark:text-white
-          ${
-            activeTab === "manage"
-              ? "bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700"
-              : "hover:bg-neutral-200 dark:hover:bg-neutral-800"
-          }`}
-              onClick={() => {
-                setActiveTab("manage");
-                setIsMobileMenuOpen(false);
-              }}
-            >
-              <UserPen className="h-4 w-4 mr-2" />
-              Manage Users
-            </Button>
+                onClick={() => {
+                  setActiveTab(item.id);
+                  setIsMobileMenuOpen(false);
+                }}
+              >
+                {item.icon}
+                {item.label}
+              </Button>
+            ))}
           </nav>
-        )}
+        </div>
       </div>
 
       {/* Desktop Sidebar */}
@@ -288,51 +283,28 @@ export default function HomePage() {
           Dashboard
         </h1>
         <nav className="space-y-2">
-          <Button
-            variant="ghost"
-            className={`w-full justify-start text-neutral-900 dark:text-white
-              ${
-                activeTab === "revenue"
-                  ? "bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700"
-                  : "hover:bg-neutral-200 dark:hover:bg-neutral-800"
-              }`}
-            onClick={() => setActiveTab("revenue")}
-          >
-            <IndianRupee className="h-4 w-4 mr-2" />
-            Revenue
-          </Button>
-          <Button
-            variant="ghost"
-            className={`w-full justify-start text-neutral-900 dark:text-white
-              ${
-                activeTab === "register"
-                  ? "bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700"
-                  : "hover:bg-neutral-200 dark:hover:bg-neutral-800"
-              }`}
-            onClick={() => setActiveTab("register")}
-          >
-            <User className="h-4 w-4 mr-2" />
-            Register User
-          </Button>
-          <Button
-            variant="ghost"
-            className={`w-full justify-start text-neutral-900 dark:text-white
-              ${
-                activeTab === "manage"
-                  ? "bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700"
-                  : "hover:bg-neutral-200 dark:hover:bg-neutral-800"
-              }`}
-            onClick={() => setActiveTab("manage")}
-          >
-            <UserPen className="h-4 w-4 mr-2" />
-            Manage Users
-          </Button>
+          {menuItems.map((item) => (
+            <Button
+              key={item.id}
+              variant="ghost"
+              className={`w-full justify-start text-neutral-900 dark:text-white transition-colors duration-200
+                ${
+                  activeTab === item.id
+                    ? "bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700"
+                    : "hover:bg-neutral-200 dark:hover:bg-neutral-800"
+                }`}
+              onClick={() => setActiveTab(item.id)}
+            >
+              {item.icon}
+              {item.label}
+            </Button>
+          ))}
         </nav>
       </div>
 
       {/* Main Content */}
       <div className="flex-1 p-4 md:p-4 mt-20 md:mt-0">
-        <header className="  justify-between items-center mb-6 hidden md:flex">
+        <header className="justify-between items-center mb-6 hidden md:flex">
           <h2 className="text-lg font-bold">
             {activeTab === "register"
               ? "Register User"
@@ -341,15 +313,16 @@ export default function HomePage() {
               : "Revenue"}
           </h2>
           <div className="hidden md:flex space-x-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-neutral-900 dark:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800"
-              onClick={handleInstallClick}
-              style={{ display: deferredPrompt ? 'flex' : 'none' }}
-            >
-              <CloudDownload />
-            </Button>
+            {deferredPrompt && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-neutral-900 dark:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800"
+                onClick={handleInstallClick}
+              >
+                <CloudDownload />
+              </Button>
+            )}
             <ThemeToggle />
           </div>
         </header>
