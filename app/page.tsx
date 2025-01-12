@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { CalendarIcon, User, UserPen, Menu, X, IndianRupee, CloudDownload  } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -63,14 +63,30 @@ export default function HomePage() {
 
   const [users, setUsers] = useState<User[]>([]);
   const currentDate = new Date();
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
-      // Cast the event to BeforeInstallPromptEvent
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
+       setDeferredPrompt(e as BeforeInstallPromptEvent);
     });
   }, []);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
+        setIsMobileMenuOpen(false);
+      }
+    }
+
+    if (isMobileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isMobileMenuOpen]);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
@@ -175,7 +191,7 @@ export default function HomePage() {
   return (
     <div className="flex min-h-screen bg-white dark:bg-neutral-950 text-neutral-950 dark:text-neutral-50">
       {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 bg-neutral-100 dark:bg-neutral-900 p-4 z-50">
+      <div ref={mobileMenuRef} className="md:hidden fixed top-0 left-0 right-0 bg-neutral-100 dark:bg-neutral-900 p-4 z-50">
         <div className="flex justify-between items-center">
           <h1 className="text-xl font-semibold text-neutral-900 dark:text-white">
             {activeTab === "register"
