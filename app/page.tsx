@@ -85,6 +85,40 @@ export default function HomePage() {
     return diffMonths > 0;
   };
 
+  const UserTable = ({ users, filter, status }: { users: User[]; filter: (lastPaidMonth: string) => boolean; status: string }) => (
+    <Table>
+      <TableCaption>A list of {status.toLowerCase()} gym members and their payment status.</TableCaption>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-[200px]">Name</TableHead>
+          <TableHead>Number</TableHead>
+          <TableHead>Date</TableHead>
+          <TableHead>Last Paid Month</TableHead>
+          <TableHead>Amount</TableHead>
+          <TableHead>Status</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {users
+          .filter((user) => filter(user.lastPaidMonth))
+          .map((user) => (
+            <TableRow key={user.id}>
+              <TableCell className="font-medium">{user.name}</TableCell>
+              <TableCell>{user.number}</TableCell>
+              <TableCell>{format(user.date, "PPP")}</TableCell>
+              <TableCell>{format(new Date(user.lastPaidMonth), "PPP")}</TableCell>
+              <TableCell>${user.amount.toFixed(2)}</TableCell>
+              <TableCell>
+                <span className={status === "Active" ? "text-green-500 dark:text-green-400" : "text-red-500 dark:text-red-400"}>
+                  {status}
+                </span>
+              </TableCell>
+            </TableRow>
+          ))}
+      </TableBody>
+    </Table>
+  );
+
   return (
     <div className="min-h-screen bg-white text-neutral-950 dark:bg-neutral-950 dark:text-neutral-50 px-4">
       <header className="container mx-auto py-4 flex justify-between items-center">
@@ -126,7 +160,9 @@ export default function HomePage() {
                     placeholder="Enter the phone number"
                     value={phone}
                     onChange={(e) => {
-                      const sanitized = e.target.value.replace(/\D/g, "").slice(0, 10);
+                      const sanitized = e.target.value
+                        .replace(/\D/g, "")
+                        .slice(0, 10);
                       setPhone(sanitized);
                     }}
                   />
@@ -146,11 +182,7 @@ export default function HomePage() {
                           !date && "text-neutral-500 dark:text-neutral-400"
                         )}
                       >
-                        {date ? (
-                          format(date, "PPP")
-                        ) : (
-                          <span>Pick a date</span>
-                        )}
+                        {date ? format(date, "PPP") : <span>Pick a date</span>}
                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                       </Button>
                     </div>
@@ -234,7 +266,7 @@ export default function HomePage() {
                     ? "secondary"
                     : "default"
                 }
-                disabled={
+                 disabled={
                   !name || !phone || !date || !duration || !paymentMethod || !amount
                 }
               >
@@ -244,45 +276,25 @@ export default function HomePage() {
           </TabsContent>
 
           <TabsContent value="manage">
-            <Table>
-              <TableCaption>
-                A list of gym members and their payment status.
-              </TableCaption>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[200px]">Name</TableHead>
-                  <TableHead>Number</TableHead>
-                  <TableHead> Date</TableHead>
-                  <TableHead>Last Paid Month</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.name}</TableCell>
-                    <TableCell>{user.number}</TableCell>
-                    <TableCell>{format(user.date, "PPP")}</TableCell>
-                    <TableCell>
-                      {format(new Date(user.lastPaidMonth), "PPP")}
-                    </TableCell>
-                    <TableCell>${user.amount.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <span
-                        className={
-                          isPending(user.lastPaidMonth)
-                            ? "text-red-500 dark:text-red-400"
-                            : "text-green-500 dark:text-green-400"
-                        }
-                      >
-                        {isPending(user.lastPaidMonth) ? "Pending" : "Paid"}
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <Tabs defaultValue="active" className="mt-4 ">
+              <TabsList className="grid grid-cols-3 max-w-sm">
+                <TabsTrigger value="active">Active</TabsTrigger>
+                <TabsTrigger value="pending">Pending</TabsTrigger>
+                <TabsTrigger value="inactive">Inactive</TabsTrigger>
+              </TabsList>
+              <TabsContent value="active">
+                {/* Render active users */}
+                <UserTable users={users} filter={(lastPaidMonth) => !isPending(lastPaidMonth)} status="Active" />
+              </TabsContent>
+              <TabsContent value="pending">
+                {/* Render pending users */}
+                <UserTable users={users} filter={(lastPaidMonth) => isPending(lastPaidMonth)} status="Pending" />
+              </TabsContent>
+              <TabsContent value="inactive">
+                {/* Render inactive users */}
+                <UserTable users={users} filter={() => false} status="Inactive" />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
         </Tabs>
       </main>
