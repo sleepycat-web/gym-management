@@ -3,8 +3,7 @@ import { Inter } from 'next/font/google'
 import "./globals.css"
 import { ThemeProvider } from "@/components/ui/theme-provider"
 
-const inter = Inter({ subsets: ["latin"] })
-
+ 
 export const metadata: Metadata = {
   title: "Gym Management System",
   description: "Manage gym members, fees, and payments",
@@ -18,7 +17,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className="font-poppins" >
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

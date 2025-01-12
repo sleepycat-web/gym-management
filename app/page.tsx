@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, User, UserPen, Menu, X, IndianRupee, CloudDownload  } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
- 
+
 // Define the User type
 type User = {
   id: string;
@@ -51,9 +51,42 @@ export default function HomePage() {
   const [duration, setDuration] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [amount, setAmount] = useState("");
+  const [activeTab, setActiveTab] = useState("revenue");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   const [users, setUsers] = useState<User[]>([]);
   const currentDate = new Date();
+
+  useEffect(() => {
+    window.addEventListener('beforeinstallprompt', (e) => {
+      // Prevent Chrome 67 and earlier from automatically showing the prompt
+      e.preventDefault();
+      // Stash the event so it can be triggered later.
+      setDeferredPrompt(e);
+    });
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+
+    // Show the install prompt
+    deferredPrompt.prompt();
+    
+    // Wait for the user to respond to the prompt
+    const { outcome } = await deferredPrompt.userChoice;
+    
+    // Clear the deferredPrompt variable
+    setDeferredPrompt(null);
+  };
+
+  const handleDurationChange = (value: string | null) => {
+    setDuration(value || "");
+  };
+
+  const handlePaymentMethodChange = (value: string | null) => {
+    setPaymentMethod(value || "");
+  };
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,9 +118,17 @@ export default function HomePage() {
     return diffMonths > 0;
   };
 
-  const UserTable = ({ users, filter, status }: { users: User[]; filter: (lastPaidMonth: string) => boolean; status: string }) => (
+  const UserTable = ({
+    users,
+    filter,
+    status,
+  }: {
+    users: User[];
+    filter: (lastPaidMonth: string) => boolean;
+    status: string;
+  }) => (
     <Table>
-      <TableCaption>A list of {status.toLowerCase()} gym members and their payment status.</TableCaption>
+      <TableCaption>A list of {status.toLowerCase()} gym members.</TableCaption>
       <TableHeader>
         <TableRow>
           <TableHead className="w-[200px]">Name</TableHead>
@@ -106,10 +147,18 @@ export default function HomePage() {
               <TableCell className="font-medium">{user.name}</TableCell>
               <TableCell>{user.number}</TableCell>
               <TableCell>{format(user.date, "PPP")}</TableCell>
-              <TableCell>{format(new Date(user.lastPaidMonth), "PPP")}</TableCell>
+              <TableCell>
+                {format(new Date(user.lastPaidMonth), "PPP")}
+              </TableCell>
               <TableCell>${user.amount.toFixed(2)}</TableCell>
               <TableCell>
-                <span className={status === "Active" ? "text-green-500 dark:text-green-400" : "text-red-500 dark:text-red-400"}>
+                <span
+                  className={
+                    status === "Active"
+                      ? "text-green-500 dark:text-green-400"
+                      : "text-red-500 dark:text-red-400"
+                  }
+                >
                   {status}
                 </span>
               </TableCell>
@@ -120,80 +169,220 @@ export default function HomePage() {
   );
 
   return (
-    <div className="min-h-screen bg-white text-neutral-950 dark:bg-neutral-950 dark:text-neutral-50 px-4">
-      <header className="container mx-auto py-4 flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Gym Management System</h1>
-        <ThemeToggle />
-      </header>
-
-      <main className="container py-4 md:max-w-none max-w-md">
-        <Tabs defaultValue="register" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="register">Register User</TabsTrigger>
-            <TabsTrigger value="manage">Manage Users</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="register">
-            <form
-              onSubmit={onSubmit}
-              className="space-y-8 max-w-auto  max-w-md  "
+    <div className="flex min-h-screen bg-white dark:bg-neutral-950 text-neutral-950 dark:text-neutral-50">
+      {/* Mobile Header */}
+      <div className="md:hidden fixed top-0 left-0 right-0 bg-neutral-100 dark:bg-neutral-900 p-4 z-50">
+        <div className="flex justify-between items-center">
+          <h1 className="text-xl font-semibold text-neutral-900 dark:text-white">
+            {activeTab === "register"
+              ? "Register User"
+              : activeTab === "revenue"
+              ? "Revenue"
+              : "Manage Users"}
+          </h1>
+          <div className="flex items-center gap-x-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-neutral-900 dark:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800"
+              onClick={handleInstallClick}
+              style={{ display: deferredPrompt ? 'block' : 'none' }}
             >
+              <CloudDownload />
+            </Button>
+            <ThemeToggle />
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="text-neutral-900 dark:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800"
+            >
+              {isMobileMenuOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
+            </Button>
+          </div>
+        </div>
+
+        {/* Mobile Menu */}
+        {isMobileMenuOpen && (
+          <nav className="mt-4 space-y-2">
+            <Button
+              variant="ghost"
+              className={`w-full justify-start text-neutral-900 dark:text-white
+                ${
+                  activeTab === "revenue"
+                    ? "bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700"
+                    : "hover:bg-neutral-200 dark:hover:bg-neutral-800"
+                }`}
+              onClick={() => {
+                setActiveTab("revenue");
+                setIsMobileMenuOpen(false);
+              }}
+            >
+              <IndianRupee className="h-4 w-4 mr-2" />
+              Revenue
+            </Button>
+            <Button
+              variant="ghost"
+              className={`w-full justify-start text-neutral-900 dark:text-white
+          ${
+            activeTab === "register"
+              ? "bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700"
+              : "hover:bg-neutral-200 dark:hover:bg-neutral-800"
+          }`}
+              onClick={() => {
+                setActiveTab("register");
+                setIsMobileMenuOpen(false);
+              }}
+            >
+              <User className="h-4 w-4 mr-2" />
+              Register User
+            </Button>
+            <Button
+              variant="ghost"
+              className={`w-full justify-start text-neutral-900 dark:text-white
+          ${
+            activeTab === "manage"
+              ? "bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700"
+              : "hover:bg-neutral-200 dark:hover:bg-neutral-800"
+          }`}
+              onClick={() => {
+                setActiveTab("manage");
+                setIsMobileMenuOpen(false);
+              }}
+            >
+              <UserPen className="h-4 w-4 mr-2" />
+              Manage Users
+            </Button>
+          </nav>
+        )}
+      </div>
+
+      {/* Desktop Sidebar */}
+      <div className="w-56 bg-neutral-100 dark:bg-neutral-900 p-4 hidden md:block">
+        <h1 className="text-xl font-semibold mb-6 text-neutral-900 dark:text-white">
+          Dashboard
+        </h1>
+        <nav className="space-y-2">
+          <Button
+            variant="ghost"
+            className={`w-full justify-start text-neutral-900 dark:text-white
+              ${
+                activeTab === "revenue"
+                  ? "bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700"
+                  : "hover:bg-neutral-200 dark:hover:bg-neutral-800"
+              }`}
+            onClick={() => setActiveTab("revenue")}
+          >
+            <IndianRupee className="h-4 w-4 mr-2" />
+            Revenue
+          </Button>
+          <Button
+            variant="ghost"
+            className={`w-full justify-start text-neutral-900 dark:text-white
+              ${
+                activeTab === "register"
+                  ? "bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700"
+                  : "hover:bg-neutral-200 dark:hover:bg-neutral-800"
+              }`}
+            onClick={() => setActiveTab("register")}
+          >
+            <User className="h-4 w-4 mr-2" />
+            Register User
+          </Button>
+          <Button
+            variant="ghost"
+            className={`w-full justify-start text-neutral-900 dark:text-white
+              ${
+                activeTab === "manage"
+                  ? "bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700"
+                  : "hover:bg-neutral-200 dark:hover:bg-neutral-800"
+              }`}
+            onClick={() => setActiveTab("manage")}
+          >
+            <UserPen className="h-4 w-4 mr-2" />
+            Manage Users
+          </Button>
+        </nav>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 p-4 md:p-4 mt-20 md:mt-0">
+        <header className="  justify-between items-center mb-6 hidden md:flex">
+          <h2 className="text-lg font-bold">
+            {activeTab === "register"
+              ? "Register User"
+              : activeTab === "manage"
+              ? "Manage Users"
+              : "Revenue"}
+          </h2>
+          <div className="hidden md:flex space-x-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-neutral-900 dark:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800"
+              onClick={handleInstallClick}
+              style={{ display: deferredPrompt ? 'flex' : 'none' }}
+            >
+              <CloudDownload />
+            </Button>
+            <ThemeToggle />
+          </div>
+        </header>
+
+        <main>
+          {activeTab === "register" ? (
+            <form onSubmit={onSubmit} className="space-y-8 max-w-md">
               <div>
                 <label>Name</label>
-                <div>
-                  <Input
-                    placeholder="Enter the name"
-                    value={name}
-                    onChange={(e) => {
-                      const sanitized = e.target.value.replace(/[<>?]/g, "");
-                      setName(sanitized);
-                    }}
-                  />
-                </div>
-                <span></span>
+                <Input
+                  placeholder="Enter the name"
+                  value={name}
+                  onChange={(e) => {
+                    const sanitized = e.target.value.replace(/[<>?]/g, "");
+                    setName(sanitized);
+                  }}
+                />
               </div>
 
               <div>
                 <label>Phone</label>
-                <div>
-                  <Input
-                    placeholder="Enter the phone number"
-                    value={phone}
-                    onChange={(e) => {
-                      const sanitized = e.target.value
-                        .replace(/\D/g, "")
-                        .slice(0, 10);
-                      setPhone(sanitized);
-                    }}
-                  />
-                </div>
-                <span></span>
+                <Input
+                  placeholder="Enter the phone number"
+                  value={phone}
+                  onChange={(e) => {
+                    const sanitized = e.target.value
+                      .replace(/\D/g, "")
+                      .slice(0, 10);
+                    setPhone(sanitized);
+                  }}
+                />
               </div>
 
               <div className="flex flex-col">
                 <label>Date</label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <div>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-[240px] pl-3 text-left font-normal",
-                          !date && "text-neutral-500 dark:text-neutral-400"
-                        )}
-                      >
-                        {date ? format(date, "PPP") : <span>Pick a date</span>}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </div>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-[240px] pl-3 text-left font-normal",
+                        !date && "text-neutral-500 dark:text-neutral-400"
+                      )}
+                    >
+                      {date ? format(date, "PPP") : <span>Pick a date</span>}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
                       selected={date}
-                      onSelect={(date) => {
-                        if (date) setdate(date);
-                      }}
+                      onSelect={(date) => date && setdate(date)}
                       disabled={(date) =>
                         date > new Date() || date < new Date("1900-01-01")
                       }
@@ -201,20 +390,14 @@ export default function HomePage() {
                     />
                   </PopoverContent>
                 </Popover>
-                <span></span>
               </div>
 
               <div>
                 <label>Duration</label>
-                <Select
-                  onValueChange={(value) => setDuration(value || "")}
-                  value={duration}
-                >
-                  <div>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Duration" />
-                    </SelectTrigger>
-                  </div>
+                <Select onValueChange={handleDurationChange} value={duration}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Duration" />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="15 days">15 days</SelectItem>
                     <SelectItem value="1 month">1 month</SelectItem>
@@ -222,82 +405,85 @@ export default function HomePage() {
                     <SelectItem value="6 months">6 months</SelectItem>
                   </SelectContent>
                 </Select>
-                <span></span>
               </div>
 
               <div>
                 <label>Payment Method</label>
                 <Select
-                  onValueChange={(value) => setPaymentMethod(value || "")}
+                  onValueChange={handlePaymentMethodChange}
                   value={paymentMethod}
                 >
-                  <div>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose Payment" />
-                    </SelectTrigger>
-                  </div>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose Payment" />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Cash">Cash</SelectItem>
                     <SelectItem value="Online">Online</SelectItem>
                   </SelectContent>
                 </Select>
-                <span></span>
               </div>
 
               <div>
                 <label>Amount</label>
-                <div>
-                  <Input
-                    placeholder="Enter the amount"
-                    value={amount}
-                    onChange={(e) => {
-                      const sanitized = e.target.value.replace(/\D/g, "");
-                      setAmount(sanitized);
-                    }}
-                  />
-                </div>
-                <span></span>
+                <Input
+                  placeholder="Enter the amount"
+                  value={amount}
+                  onChange={(e) => {
+                    const sanitized = e.target.value.replace(/\D/g, "");
+                    setAmount(sanitized);
+                  }}
+                />
               </div>
 
               <Button
                 type="submit"
-                variant={
-                  !name || !phone || !date || !duration || !paymentMethod || !amount
-                    ? "secondary"
-                    : "default"
-                }
-                 disabled={
-                  !name || !phone || !date || !duration || !paymentMethod || !amount
+                disabled={
+                  !name ||
+                  !phone ||
+                  !date ||
+                  !duration ||
+                  !paymentMethod ||
+                  !amount
                 }
               >
                 Register User
               </Button>
             </form>
-          </TabsContent>
-
-          <TabsContent value="manage">
-            <Tabs defaultValue="active" className="mt-4 ">
-              <TabsList className="grid grid-cols-3 max-w-sm">
+          ) : activeTab === "manage" ? (
+            <Tabs defaultValue="active" className="w-full">
+              <TabsList className="grid w-full grid-cols-3 max-w-sm">
                 <TabsTrigger value="active">Active</TabsTrigger>
                 <TabsTrigger value="pending">Pending</TabsTrigger>
                 <TabsTrigger value="inactive">Inactive</TabsTrigger>
               </TabsList>
               <TabsContent value="active">
-                {/* Render active users */}
-                <UserTable users={users} filter={(lastPaidMonth) => !isPending(lastPaidMonth)} status="Active" />
+                <UserTable
+                  users={users}
+                  filter={(lastPaidMonth) => !isPending(lastPaidMonth)}
+                  status="Active"
+                />
               </TabsContent>
               <TabsContent value="pending">
-                {/* Render pending users */}
-                <UserTable users={users} filter={(lastPaidMonth) => isPending(lastPaidMonth)} status="Pending" />
+                <UserTable
+                  users={users}
+                  filter={(lastPaidMonth) => isPending(lastPaidMonth)}
+                  status="Pending"
+                />
               </TabsContent>
               <TabsContent value="inactive">
-                {/* Render inactive users */}
-                <UserTable users={users} filter={() => false} status="Inactive" />
+                <UserTable
+                  users={users}
+                  filter={() => false}
+                  status="Inactive"
+                />
               </TabsContent>
             </Tabs>
-          </TabsContent>
-        </Tabs>
-      </main>
+          ) : (
+            // Revenue Content
+            <div></div>
+          )}
+        </main>
+      </div>
     </div>
   );
 }
