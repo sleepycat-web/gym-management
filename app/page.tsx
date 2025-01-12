@@ -1,101 +1,291 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState } from "react";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+ 
+// Define the User type
+type User = {
+  id: string;
+  name: string;
+  phone: string;
+  date: Date;
+  duration: string;
+  paymentMethod: string;
+  amount: number;
+  number: number;
+  lastPaidMonth: string;
+};
+
+export default function HomePage() {
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [date, setdate] = useState(new Date());
+  const [duration, setDuration] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [amount, setAmount] = useState("");
+
+  const [users, setUsers] = useState<User[]>([]);
+  const currentDate = new Date();
+
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newUser: User = {
+      id: Math.random().toString(36).substr(2, 9),
+      name,
+      phone,
+      date,
+      duration,
+      paymentMethod,
+      amount: Number(amount),
+      number: users.length + 1,
+      lastPaidMonth: new Date().toISOString(),
+    };
+    setUsers([...users, newUser]);
+    setName("");
+    setPhone("");
+    setdate(new Date());
+    setDuration("");
+    setPaymentMethod("");
+    setAmount("");
+  };
+
+  const isPending = (lastPaidMonth: string) => {
+    const lastPaid = new Date(lastPaidMonth);
+    const diffMonths =
+      (currentDate.getFullYear() - lastPaid.getFullYear()) * 12 +
+      (currentDate.getMonth() - lastPaid.getMonth());
+    return diffMonths > 0;
+  };
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <div className="min-h-screen bg-white text-neutral-950 dark:bg-neutral-950 dark:text-neutral-50 px-4">
+      <header className="container mx-auto py-4 flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Gym Management System</h1>
+        <ThemeToggle />
+      </header>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
+      <main className="container py-4 md:max-w-none max-w-md">
+        <Tabs defaultValue="register" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="register">Register User</TabsTrigger>
+            <TabsTrigger value="manage">Manage Users</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="register">
+            <form
+              onSubmit={onSubmit}
+              className="space-y-8 max-w-auto  max-w-md  "
+            >
+              <div>
+                <label>Name</label>
+                <div>
+                  <Input
+                    placeholder="Enter the name"
+                    value={name}
+                    onChange={(e) => {
+                      const sanitized = e.target.value.replace(/[<>?]/g, "");
+                      setName(sanitized);
+                    }}
+                  />
+                </div>
+                <span></span>
+              </div>
+
+              <div>
+                <label>Phone</label>
+                <div>
+                  <Input
+                    placeholder="Enter the phone number"
+                    value={phone}
+                    onChange={(e) => {
+                      const sanitized = e.target.value.replace(/\D/g, "").slice(0, 10);
+                      setPhone(sanitized);
+                    }}
+                  />
+                </div>
+                <span></span>
+              </div>
+
+              <div className="flex flex-col">
+                <label>Date</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <div>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-[240px] pl-3 text-left font-normal",
+                          !date && "text-neutral-500 dark:text-neutral-400"
+                        )}
+                      >
+                        {date ? (
+                          format(date, "PPP")
+                        ) : (
+                          <span>Pick a date</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </div>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={date}
+                      onSelect={(date) => {
+                        if (date) setdate(date);
+                      }}
+                      disabled={(date) =>
+                        date > new Date() || date < new Date("1900-01-01")
+                      }
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                <span></span>
+              </div>
+
+              <div>
+                <label>Duration</label>
+                <Select
+                  onValueChange={(value) => setDuration(value || "")}
+                  value={duration}
+                >
+                  <div>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Duration" />
+                    </SelectTrigger>
+                  </div>
+                  <SelectContent>
+                    <SelectItem value="15 days">15 days</SelectItem>
+                    <SelectItem value="1 month">1 month</SelectItem>
+                    <SelectItem value="3 months">3 months</SelectItem>
+                    <SelectItem value="6 months">6 months</SelectItem>
+                  </SelectContent>
+                </Select>
+                <span></span>
+              </div>
+
+              <div>
+                <label>Payment Method</label>
+                <Select
+                  onValueChange={(value) => setPaymentMethod(value || "")}
+                  value={paymentMethod}
+                >
+                  <div>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose Payment" />
+                    </SelectTrigger>
+                  </div>
+                  <SelectContent>
+                    <SelectItem value="Cash">Cash</SelectItem>
+                    <SelectItem value="Online">Online</SelectItem>
+                  </SelectContent>
+                </Select>
+                <span></span>
+              </div>
+
+              <div>
+                <label>Amount</label>
+                <div>
+                  <Input
+                    placeholder="Enter the amount"
+                    value={amount}
+                    onChange={(e) => {
+                      const sanitized = e.target.value.replace(/\D/g, "");
+                      setAmount(sanitized);
+                    }}
+                  />
+                </div>
+                <span></span>
+              </div>
+
+              <Button
+                type="submit"
+                variant={
+                  !name || !phone || !date || !duration || !paymentMethod || !amount
+                    ? "secondary"
+                    : "default"
+                }
+                disabled={
+                  !name || !phone || !date || !duration || !paymentMethod || !amount
+                }
+              >
+                Register User
+              </Button>
+            </form>
+          </TabsContent>
+
+          <TabsContent value="manage">
+            <Table>
+              <TableCaption>
+                A list of gym members and their payment status.
+              </TableCaption>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[200px]">Name</TableHead>
+                  <TableHead>Number</TableHead>
+                  <TableHead> Date</TableHead>
+                  <TableHead>Last Paid Month</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">{user.name}</TableCell>
+                    <TableCell>{user.number}</TableCell>
+                    <TableCell>{format(user.date, "PPP")}</TableCell>
+                    <TableCell>
+                      {format(new Date(user.lastPaidMonth), "PPP")}
+                    </TableCell>
+                    <TableCell>${user.amount.toFixed(2)}</TableCell>
+                    <TableCell>
+                      <span
+                        className={
+                          isPending(user.lastPaidMonth)
+                            ? "text-red-500 dark:text-red-400"
+                            : "text-green-500 dark:text-green-400"
+                        }
+                      >
+                        {isPending(user.lastPaidMonth) ? "Pending" : "Paid"}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TabsContent>
+        </Tabs>
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
   );
 }
