@@ -31,6 +31,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+// Define the BeforeInstallPromptEvent interface
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+}
+
 // Define the User type
 type User = {
   id: string;
@@ -53,17 +59,16 @@ export default function HomePage() {
   const [amount, setAmount] = useState("");
   const [activeTab, setActiveTab] = useState("revenue");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
 
   const [users, setUsers] = useState<User[]>([]);
   const currentDate = new Date();
 
   useEffect(() => {
     window.addEventListener('beforeinstallprompt', (e) => {
-      // Prevent Chrome 67 and earlier from automatically showing the prompt
       e.preventDefault();
-      // Stash the event so it can be triggered later.
-      setDeferredPrompt(e);
+      // Cast the event to BeforeInstallPromptEvent
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
     });
   }, []);
 
@@ -71,11 +76,10 @@ export default function HomePage() {
     if (!deferredPrompt) return;
 
     // Show the install prompt
-    deferredPrompt.prompt();
+    await deferredPrompt.prompt();
     
     // Wait for the user to respond to the prompt
-    const { outcome } = await deferredPrompt.userChoice;
-    
+     
     // Clear the deferredPrompt variable
     setDeferredPrompt(null);
   };
